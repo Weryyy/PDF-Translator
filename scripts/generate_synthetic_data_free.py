@@ -9,6 +9,7 @@ Supported Methods:
 3. Rule-based templates - No API needed, fully offline
 4. Back-translation - Using free MarianMT models
 5. Open Source Models (GPT-2, BLOOM, etc.) - Free, run locally
+6. Corpus-based - Uses public domain books from Project Gutenberg
 
 Usage examples:
   # Using Ollama (recommended - free and unlimited)
@@ -25,6 +26,9 @@ Usage examples:
 
   # Using back-translation
   python scripts/generate_synthetic_data_free.py -n 5000 -m backtranslation
+  
+  # Using public domain corpus (high quality literature)
+  python scripts/generate_synthetic_data_free.py -n 2000 -m corpus
 """
 
 import os
@@ -645,82 +649,86 @@ class BackTranslationGenerator:
     
     def __init__(self):
         """Initialize back-translation generator"""
+        print("Loading MarianMT translation models...")
+        print("This might take a moment on first run...")
+        
         try:
             from transformers import MarianMTModel, MarianTokenizer
             
-            print("Loading translation models for back-translation...")
-            # Load both directions
+            # English -> Spanish
             self.en_es_tokenizer = MarianTokenizer.from_pretrained("Helsinki-NLP/opus-mt-en-es")
             self.en_es_model = MarianMTModel.from_pretrained("Helsinki-NLP/opus-mt-en-es")
             
+            # Spanish -> English
             self.es_en_tokenizer = MarianTokenizer.from_pretrained("Helsinki-NLP/opus-mt-es-en")
             self.es_en_model = MarianMTModel.from_pretrained("Helsinki-NLP/opus-mt-es-en")
             
-            print("Models loaded successfully!")
+            print("✓ Models loaded successfully")
             
         except Exception as e:
-            print(f"Error loading translation models: {e}")
-            print("Please install transformers: pip install transformers")
+            print(f"Error loading models: {e}")
+            print("Install transformers: pip install transformers")
             sys.exit(1)
         
-        # Load base sentences from common sources
-        self.base_sentences = self._load_base_sentences()
+        # Base sentences for back-translation
+        self.base_sentences = [
+            "The rapid advancement of technology has transformed modern society.",
+            "Climate change poses significant challenges to global ecosystems.",
+            "Effective communication is essential for successful collaboration.",
+            "Innovation drives economic growth and competitiveness.",
+            "Education plays a crucial role in personal development.",
+            "Data analysis helps organizations make informed decisions.",
+            "Quality assurance ensures product reliability and customer satisfaction.",
+            "Research and development accelerate scientific progress.",
+            "Digital transformation changes how businesses operate.",
+            "Sustainable practices protect environmental resources.",
+        ]
+
+
+class CorpusBasedGenerator:
+    """Generate synthetic data from public domain corpus"""
     
-    def _load_base_sentences(self) -> List[str]:
-        """Load or generate base sentences"""
-        # Common English sentences for back-translation
-        return [
-            "The weather is beautiful today.",
-            "Technology continues to advance rapidly.",
-            "Education is essential for personal development.",
-            "Healthcare systems face many challenges.",
-            "Climate change affects everyone globally.",
-            "Artificial intelligence transforms industries.",
-            "Renewable energy becomes more affordable.",
-            "Global trade connects distant markets.",
-            "Scientific research drives innovation.",
-            "Cultural diversity enriches society.",
-            # Add more base sentences...
-        ] * 10  # Repeat to get more variations
-    
-    def translate_en_to_es(self, text: str) -> str:
-        """Translate English to Spanish"""
-        try:
-            inputs = self.en_es_tokenizer([text], return_tensors="pt", padding=True)
-            translated = self.en_es_model.generate(**inputs, max_length=512)
-            return self.en_es_tokenizer.decode(translated[0], skip_special_tokens=True)
-        except Exception as e:
-            print(f"Translation error: {e}")
-            return ""
-    
-    def translate_es_to_en(self, text: str) -> str:
-        """Translate Spanish to English"""
-        try:
-            inputs = self.es_en_tokenizer([text], return_tensors="pt", padding=True)
-            translated = self.es_en_model.generate(**inputs, max_length=512)
-            return self.es_en_tokenizer.decode(translated[0], skip_special_tokens=True)
-        except Exception as e:
-            print(f"Translation error: {e}")
-            return ""
+    def __init__(self, corpus_file: str = None):
+        """Initialize corpus-based generator"""
+        if corpus_file and os.path.exists(corpus_file):
+            self.corpus_file = corpus_file
+            print(f"Loading corpus from {corpus_file}...")
+            with open(corpus_file, 'r', encoding='utf-8') as f:
+                corpus_data = json.load(f)
+            self.pairs = [(p["source"], p["target"]) for p in corpus_data.get("pairs", [])]
+            print(f"✓ Loaded {len(self.pairs)} translation pairs from corpus")
+        else:
+            print("No corpus file provided or file not found.")
+            print("Building corpus from public domain books...")
+            # Import and use public domain corpus builder
+            sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..', 'src'))
+            try:
+                from public_domain_corpus import PublicDomainCorpus
+                corpus = PublicDomainCorpus()
+                # Build a small corpus with one book
+                corpus_file = corpus.build_corpus_dataset(
+                    output_dir="./corpus_data",
+                    books=["alice_wonderland"],  # Start with Alice in Wonderland
+                    pairs_per_book=500
+                )
+                self.corpus_file = corpus_file
+                # Reload the pairs
+                with open(corpus_file, 'r', encoding='utf-8') as f:
+                    corpus_data = json.load(f)
+                self.pairs = [(p["source"], p["target"]) for p in corpus_data.get("pairs", [])]
+            except Exception as e:
+                print(f"Error building corpus: {e}")
+                print("Falling back to empty corpus")
+                self.pairs = []
     
     def generate_pair(self, source_lang: str, target_lang: str,
                      domain: str, text_type: str) -> Tuple[str, str]:
-        """Generate pair using back-translation"""
+        """Generate pair from corpus"""
+        if not self.pairs:
+            return "", ""
         
-        # Get random base sentence
-        base_text = random.choice(self.base_sentences)
-        
-        if source_lang == "English" and target_lang == "Spanish":
-            # Forward translation
-            target_text = self.translate_en_to_es(base_text)
-            # Back translation creates variation
-            source_text = self.translate_es_to_en(target_text)
-            
-            # Use back-translated as source for variety
-            return source_text if source_text else base_text, target_text
-        else:
-            # For other language pairs, use base directly
-            return base_text, self.translate_en_to_es(base_text)
+        # Return a random pair from corpus
+        return random.choice(self.pairs)
 
 
 class FreeSyntheticDataGenerator:
@@ -759,6 +767,8 @@ class FreeSyntheticDataGenerator:
             self.generator = RuleBasedGenerator()
         elif method == "backtranslation":
             self.generator = BackTranslationGenerator()
+        elif method == "corpus":
+            self.generator = CorpusBasedGenerator(kwargs.get("corpus_file"))
         else:
             raise ValueError(f"Unknown method: {method}")
         
@@ -905,6 +915,7 @@ Examples:
   python scripts/generate_synthetic_data_free.py -n 500 -m huggingface --hf-text-model flan-t5-xl
 
 Methods comparison:
+  - corpus: High-quality from public domain books (Don Quixote, Bible, etc.)
   - opensource: OpenAI's GPT-2 and other open models, good quality, runs locally
   - ollama: Best quality, requires local installation, unlimited
   - rulebased: Fastest, works offline, good for large datasets
@@ -929,7 +940,7 @@ Methods comparison:
     
     parser.add_argument(
         '-m', '--method',
-        choices=['ollama', 'opensource', 'huggingface', 'rulebased', 'backtranslation'],
+        choices=['ollama', 'opensource', 'huggingface', 'rulebased', 'backtranslation', 'corpus'],
         default='rulebased',
         help='Generation method (default: rulebased)'
     )
@@ -970,6 +981,11 @@ Methods comparison:
         help='HuggingFace text generation model (default: flan-t5). Recommended: flan-t5-xl for best quality'
     )
     
+    parser.add_argument(
+        '--corpus-file',
+        help='Path to public domain corpus file for corpus-based generation'
+    )
+    
     args = parser.parse_args()
     
     try:
@@ -978,7 +994,8 @@ Methods comparison:
             ollama_model=args.ollama_model,
             os_model=args.os_model,
             hf_token=args.hf_token,
-            hf_text_model=args.hf_text_model
+            hf_text_model=args.hf_text_model,
+            corpus_file=args.corpus_file
         )
         
         generator.generate_dataset(

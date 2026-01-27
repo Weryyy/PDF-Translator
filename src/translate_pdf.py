@@ -33,6 +33,13 @@ except ImportError as e:
     print("Please install dependencies: pip install -r requirements.txt")
     sys.exit(1)
 
+# Optional: context-aware translation (import after main dependencies)
+try:
+    from context_aware_translator import ContextAwareTranslator, ContextAwareTranslationSession
+    CONTEXT_AWARE_AVAILABLE = True
+except ImportError:
+    CONTEXT_AWARE_AVAILABLE = False
+
 
 class PDFTranslator:
     """Main class for PDF translation functionality"""
@@ -41,11 +48,17 @@ class PDFTranslator:
         """Initialize the PDF translator with configuration"""
         self.config = self._load_config(config_path)
         self.use_local_model = self.config.get("use_local_model", False)
+        self.use_context_aware = self.config.get("use_context_aware", False)
+        self.context_session = None
         
         if self.use_local_model:
             self._setup_local_model()
         else:
             self._setup_openai()
+        
+        # Setup context-aware translation if enabled
+        if self.use_context_aware:
+            self._setup_context_aware()
     
     def _load_config(self, config_path: str) -> Dict[str, Any]:
         """Load configuration from JSON file or environment variables"""
@@ -55,7 +68,10 @@ class PDFTranslator:
             "target_language": "es",
             "max_tokens": 2000,
             "use_local_model": False,
-            "local_model_path": "./models/translation_model"
+            "local_model_path": "./models/translation_model",
+            "use_context_aware": False,
+            "corpus_file": "./corpus_data/public_domain_corpus.json",
+            "context_window": 3
         }
         
         # Try to load from config file
@@ -137,6 +153,35 @@ class PDFTranslator:
         print("="*60)
         print()
     
+    def _setup_context_aware(self):
+        """Setup context-aware translation with public domain corpus"""
+        if not CONTEXT_AWARE_AVAILABLE:
+            print("Warning: Context-aware translation not available")
+            print("Make sure context_aware_translator.py is in the src directory")
+            self.use_context_aware = False
+            return
+        
+        corpus_file = self.config.get("corpus_file", "./corpus_data/public_domain_corpus.json")
+        
+        print("="*60)
+        print("Context-Aware Translation Enabled")
+        print("="*60)
+        
+        if os.path.exists(corpus_file):
+            print(f"✓ Using corpus: {corpus_file}")
+            print("✓ Translation memory loaded from public domain books")
+            print("✓ Context window: {} sentences".format(
+                self.config.get("context_window", 3)
+            ))
+        else:
+            print(f"⚠ Corpus file not found: {corpus_file}")
+            print("  To build a corpus, run:")
+            print("  python src/public_domain_corpus.py -o corpus_data")
+            print("\n  Context-aware mode will still maintain sentence context")
+        
+        print("="*60)
+        print()
+    
     def extract_text_from_pdf(self, pdf_path: str) -> str:
         """Extract text from PDF file"""
         print(f"Extracting text from {pdf_path}...")
@@ -161,17 +206,35 @@ class PDFTranslator:
             raise
     
     def translate_text(self, text: str, target_language: str = None) -> str:
-        """Translate text using OpenAI API or local model"""
+        """Translate text using OpenAI API or local model with optional context awareness"""
         if not text.strip():
             return ""
         
         target_lang = target_language or self.config["target_language"]
         
         print(f"Translating text to {target_lang}...")
+        if self.use_context_aware:
+            print("Using context-aware translation mode")
         
         # Split text into chunks if it's too long
         max_chunk_size = 3000  # characters
         chunks = self._split_text(text, max_chunk_size)
+        
+        # Initialize context session if using context-aware mode
+        if self.use_context_aware and CONTEXT_AWARE_AVAILABLE:
+            corpus_file = self.config.get("corpus_file")
+            context_window = self.config.get("context_window", 3)
+            
+            if corpus_file and os.path.exists(corpus_file):
+                self.context_session = ContextAwareTranslator(
+                    corpus_file=corpus_file,
+                    context_window=context_window
+                )
+            else:
+                self.context_session = ContextAwareTranslator(
+                    corpus_file=None,
+                    context_window=context_window
+                )
         
         translated_chunks = []
         
@@ -179,7 +242,7 @@ class PDFTranslator:
             print(f"Translating chunk {i}/{len(chunks)}...")
             
             if self.use_local_model:
-                translated_text = self._translate_with_local_model(chunk)
+                translated_text = self._translate_with_local_model(chunk, target_lang)
             else:
                 translated_text = self._translate_with_openai(chunk, target_lang)
             
@@ -189,30 +252,58 @@ class PDFTranslator:
         return "\n\n".join(translated_chunks)
     
     def _translate_with_openai(self, chunk: str, target_lang: str) -> str:
-        """Translate using OpenAI API"""
+        """Translate using OpenAI API with optional context awareness"""
         try:
+            # Build prompt with context if available
+            if self.use_context_aware and self.context_session:
+                prompt = self.context_session.build_enhanced_prompt(
+                    chunk,
+                    target_lang,
+                    use_examples=True
+                )
+                system_message = f"You are a professional translator. Translate to {target_lang}."
+            else:
+                prompt = chunk
+                system_message = f"You are a professional translator. Translate the following text to {target_lang}. Maintain the original formatting and structure."
+            
             response = self.client.chat.completions.create(
                 model=self.config["model"],
                 messages=[
-                    {"role": "system", "content": f"You are a professional translator. Translate the following text to {target_lang}. Maintain the original formatting and structure."},
-                    {"role": "user", "content": chunk}
+                    {"role": "system", "content": system_message},
+                    {"role": "user", "content": prompt}
                 ],
                 max_tokens=self.config["max_tokens"],
                 temperature=0.3
             )
             
-            return response.choices[0].message.content
+            translation = response.choices[0].message.content
+            
+            # Add to context history if using context-aware mode
+            if self.use_context_aware and self.context_session:
+                self.context_session.add_to_context(chunk, translation)
+            
+            return translation
             
         except Exception as e:
             print(f"Error translating with OpenAI: {e}")
             return f"[Translation error: {str(e)}]"
     
-    def _translate_with_local_model(self, chunk: str) -> str:
-        """Translate using local model"""
+    def _translate_with_local_model(self, chunk: str, target_lang: str = None) -> str:
+        """Translate using local model with optional context awareness"""
         try:
+            # Build prompt with context if available
+            if self.use_context_aware and self.context_session:
+                text_to_translate = self.context_session.build_enhanced_prompt(
+                    chunk,
+                    target_lang or self.config["target_language"],
+                    use_examples=True
+                )
+            else:
+                text_to_translate = chunk
+            
             # Tokenize
             inputs = self.tokenizer(
-                chunk,
+                text_to_translate,
                 return_tensors="pt",
                 padding=True,
                 truncation=True,
@@ -230,6 +321,11 @@ class PDFTranslator:
             
             # Decode
             translation = self.tokenizer.decode(outputs[0], skip_special_tokens=True)
+            
+            # Add to context history if using context-aware mode
+            if self.use_context_aware and self.context_session:
+                self.context_session.add_to_context(chunk, translation)
+            
             return translation
             
         except Exception as e:
