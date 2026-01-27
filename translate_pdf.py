@@ -18,6 +18,15 @@ try:
     from reportlab.lib.units import inch
     from openai import OpenAI
     from dotenv import load_dotenv
+    
+    # Optional: for local model inference
+    try:
+        import torch
+        from transformers import AutoTokenizer, AutoModelForSeq2SeqLM
+        LOCAL_MODEL_AVAILABLE = True
+    except ImportError:
+        LOCAL_MODEL_AVAILABLE = False
+        
 except ImportError as e:
     print(f"Error: Required library not found: {e}")
     print("Please install dependencies: pip install -r requirements.txt")
@@ -30,7 +39,12 @@ class PDFTranslator:
     def __init__(self, config_path: str = "config.json"):
         """Initialize the PDF translator with configuration"""
         self.config = self._load_config(config_path)
-        self._setup_openai()
+        self.use_local_model = self.config.get("use_local_model", False)
+        
+        if self.use_local_model:
+            self._setup_local_model()
+        else:
+            self._setup_openai()
     
     def _load_config(self, config_path: str) -> Dict[str, Any]:
         """Load configuration from JSON file or environment variables"""
@@ -38,7 +52,9 @@ class PDFTranslator:
             "model": "gpt-3.5-turbo",
             "source_language": "auto",
             "target_language": "es",
-            "max_tokens": 2000
+            "max_tokens": 2000,
+            "use_local_model": False,
+            "local_model_path": "./models/translation_model"
         }
         
         # Try to load from config file
@@ -53,19 +69,72 @@ class PDFTranslator:
         # Load environment variables
         load_dotenv()
         
-        # Get API key from config or environment
-        api_key = config.get("openai_api_key") or os.getenv("OPENAI_API_KEY")
-        if not api_key or api_key == "your-api-key-here":
-            print("Error: OpenAI API key not found!")
-            print("Please set OPENAI_API_KEY environment variable or add it to config.json")
-            sys.exit(1)
+        # Get API key from config or environment (only if not using local model)
+        if not config.get("use_local_model", False):
+            api_key = config.get("openai_api_key") or os.getenv("OPENAI_API_KEY")
+            if not api_key or api_key == "your-api-key-here":
+                print("Error: OpenAI API key not found!")
+                print("Please set OPENAI_API_KEY environment variable or add it to config.json")
+                print("Or set 'use_local_model': true in config.json to use a local model")
+                sys.exit(1)
+            config["openai_api_key"] = api_key
         
-        config["openai_api_key"] = api_key
         return config
     
     def _setup_openai(self):
         """Setup OpenAI client"""
         self.client = OpenAI(api_key=self.config["openai_api_key"])
+        print("Using OpenAI API for translation")
+    
+    def _setup_local_model(self):
+        """Setup local translation model with automatic optimizations"""
+        if not LOCAL_MODEL_AVAILABLE:
+            print("Error: Local model support requires torch and transformers")
+            print("Install with: pip install torch transformers")
+            sys.exit(1)
+        
+        model_path = self.config.get("local_model_path", "./models/translation_model")
+        
+        if not os.path.exists(model_path):
+            print(f"Error: Local model not found at {model_path}")
+            print("Please train a model first using train_model_hpc.py")
+            sys.exit(1)
+        
+        print("="*60)
+        print("Loading Local Translation Model")
+        print("="*60)
+        print(f"Model path: {model_path}")
+        
+        self.tokenizer = AutoTokenizer.from_pretrained(model_path)
+        self.model = AutoModelForSeq2SeqLM.from_pretrained(model_path)
+        self.device = "cuda" if torch.cuda.is_available() else "cpu"
+        self.model = self.model.to(self.device)
+        self.model.eval()
+        
+        print(f"✓ Device: {self.device}")
+        
+        # Enable all GPU optimizations
+        if self.device == "cuda":
+            try:
+                self.model = self.model.half()
+                print("✓ Mixed precision (FP16) enabled - 2x speedup")
+            except:
+                print("⚠ Mixed precision not supported")
+            
+            torch.backends.cudnn.benchmark = True
+            torch.backends.cudnn.enabled = True
+            print("✓ CuDNN optimizations enabled")
+            
+            # TF32 for Ampere GPUs
+            if torch.cuda.get_device_capability()[0] >= 8:
+                torch.backends.cuda.matmul.allow_tf32 = True
+                torch.backends.cudnn.allow_tf32 = True
+                print("✓ TensorFloat-32 enabled")
+            
+            print(f"✓ GPU: {torch.cuda.get_device_name(0)}")
+        
+        print("="*60)
+        print()
     
     def extract_text_from_pdf(self, pdf_path: str) -> str:
         """Extract text from PDF file"""
@@ -91,7 +160,7 @@ class PDFTranslator:
             raise
     
     def translate_text(self, text: str, target_language: str = None) -> str:
-        """Translate text using OpenAI API"""
+        """Translate text using OpenAI API or local model"""
         if not text.strip():
             return ""
         
@@ -108,25 +177,63 @@ class PDFTranslator:
         for i, chunk in enumerate(chunks, 1):
             print(f"Translating chunk {i}/{len(chunks)}...")
             
-            try:
-                response = self.client.chat.completions.create(
-                    model=self.config["model"],
-                    messages=[
-                        {"role": "system", "content": f"You are a professional translator. Translate the following text to {target_lang}. Maintain the original formatting and structure."},
-                        {"role": "user", "content": chunk}
-                    ],
-                    max_tokens=self.config["max_tokens"],
-                    temperature=0.3
-                )
-                
-                translated_text = response.choices[0].message.content
+            if self.use_local_model:
+                translated_text = self._translate_with_local_model(chunk)
+            else:
+                translated_text = self._translate_with_openai(chunk, target_lang)
+            
+            if translated_text:
                 translated_chunks.append(translated_text)
-                
-            except Exception as e:
-                print(f"Error translating chunk {i}: {e}")
-                translated_chunks.append(f"[Translation error: {str(e)}]")
         
         return "\n\n".join(translated_chunks)
+    
+    def _translate_with_openai(self, chunk: str, target_lang: str) -> str:
+        """Translate using OpenAI API"""
+        try:
+            response = self.client.chat.completions.create(
+                model=self.config["model"],
+                messages=[
+                    {"role": "system", "content": f"You are a professional translator. Translate the following text to {target_lang}. Maintain the original formatting and structure."},
+                    {"role": "user", "content": chunk}
+                ],
+                max_tokens=self.config["max_tokens"],
+                temperature=0.3
+            )
+            
+            return response.choices[0].message.content
+            
+        except Exception as e:
+            print(f"Error translating with OpenAI: {e}")
+            return f"[Translation error: {str(e)}]"
+    
+    def _translate_with_local_model(self, chunk: str) -> str:
+        """Translate using local model"""
+        try:
+            # Tokenize
+            inputs = self.tokenizer(
+                chunk,
+                return_tensors="pt",
+                padding=True,
+                truncation=True,
+                max_length=512
+            ).to(self.device)
+            
+            # Generate translation
+            with torch.no_grad():
+                outputs = self.model.generate(
+                    **inputs,
+                    max_length=512,
+                    num_beams=4,
+                    early_stopping=True
+                )
+            
+            # Decode
+            translation = self.tokenizer.decode(outputs[0], skip_special_tokens=True)
+            return translation
+            
+        except Exception as e:
+            print(f"Error translating with local model: {e}")
+            return f"[Translation error: {str(e)}]"
     
     def _split_text(self, text: str, max_size: int) -> list:
         """Split text into smaller chunks"""

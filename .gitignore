@@ -41,6 +41,12 @@ config.json
 output/
 translations/
 
+# Training and model files
+models/
+synthetic_data/
+mlruns/
+tmp/
+
 # OS
 .DS_Store
 Thumbs.db
