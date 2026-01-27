@@ -9,6 +9,7 @@ Supported Methods:
 3. Rule-based templates - No API needed, fully offline
 4. Back-translation - Using free MarianMT models
 5. Open Source Models (GPT-2, BLOOM, etc.) - Free, run locally
+6. Corpus-based - Uses public domain books from Project Gutenberg
 
 Usage examples:
   # Using Ollama (recommended - free and unlimited)
@@ -25,6 +26,9 @@ Usage examples:
 
   # Using back-translation
   python scripts/generate_synthetic_data_free.py -n 5000 -m backtranslation
+  
+  # Using public domain corpus (high quality literature)
+  python scripts/generate_synthetic_data_free.py -n 2000 -m corpus
 """
 
 import os
@@ -994,6 +998,7 @@ Examples:
   python scripts/generate_synthetic_data_free.py -n 500 -m huggingface --hf-text-model flan-t5-xl
 
 Methods comparison:
+  - corpus: High-quality from public domain books (Don Quixote, Bible, etc.)
   - opensource: OpenAI's GPT-2 and other open models, good quality, runs locally
   - ollama: Best quality, requires local installation, unlimited
   - rulebased: Fastest, works offline, good for large datasets
