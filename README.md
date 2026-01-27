@@ -2,7 +2,28 @@
 
 Un traductor de PDFs personal que utiliza modelos de lenguaje para traducir documentos PDF a diferentes idiomas. Soporta tanto la API de OpenAI como modelos propios entrenados con **datos sintéticos 100% GRATUITOS**.
 
-## 🆕 NUEVO: Generación de Datos Sintéticos GRATIS
+## 🆕 NUEVO: Traducción Consciente del Contexto
+
+**Traduce con contexto, no palabra por palabra!**
+
+Ahora puedes usar **libros de dominio público** para:
+- ✅ Mejorar traducciones con contexto de oraciones previas
+- ✅ Usar memoria de traducción de literatura de alta calidad
+- ✅ Entrenar modelos con ejemplos de libros clásicos (Don Quijote, La Biblia, etc.)
+- ✅ Traducir frases enteras con sentido contextual
+
+**📖 [Guía Completa de Traducción Consciente del Contexto](docs/CONTEXT_AWARE_TRANSLATION.md)**
+
+```bash
+# Construir corpus de libros de dominio público
+python src/public_domain_corpus.py -o corpus_data
+
+# Habilitar en config.json: "use_context_aware": true
+# ¡Traduce con mejor contexto!
+python src/translate_pdf.py documento.pdf
+```
+
+## 🆕 Generación de Datos Sintéticos GRATIS
 
 Ya no necesitas pagar por APIs para entrenar tu modelo. **5 métodos gratuitos disponibles:**
 
@@ -23,6 +44,7 @@ python demo_huggingface.py
 
 ## 📚 Documentación
 
+- **[🎯 Traducción Consciente del Contexto](docs/CONTEXT_AWARE_TRANSLATION.md)** - Mejora traducciones con libros de dominio público
 - **[🤗 Guía Hugging Face](docs/HUGGINGFACE_GUIDE.md)** - Generar datos GRATIS con HuggingFace
 - **[💰 Métodos Gratuitos](docs/SYNTHETIC_DATA_FREE.md)** - Todas las opciones sin costo
 - **[Guía de Inicio Rápido](docs/QUICKSTART.md)** - Empieza en 5 minutos
@@ -33,9 +55,11 @@ python demo_huggingface.py
 
 - ✅ Extrae texto de archivos PDF
 - ✅ Traduce usando modelos de lenguaje avanzados (GPT-3.5/GPT-4)
+- ✅ **NUEVO:** Traducción consciente del contexto con libros de dominio público
+- ✅ Usa corpus de libros clásicos para mejorar calidad (Don Quijote, etc.)
 - ✅ Opción de usar modelos propios entrenados localmente
 - ✅ **NUEVO:** Generación de datos sintéticos 100% GRATUITOS
-- ✅ **5 métodos gratuitos** para generar datos (HuggingFace, Ollama, etc.)
+- ✅ **6 métodos gratuitos** para generar datos (HuggingFace, Ollama, Corpus, etc.)
 - ✅ Pipeline de entrenamiento optimizado con HPC
 - ✅ Motor de inferencia GPU-acelerado
 - ✅ Genera un nuevo PDF con el texto traducido

@@ -645,6 +645,93 @@ class BackTranslationGenerator:
     
     def __init__(self):
         """Initialize back-translation generator"""
+        print("Loading MarianMT translation models...")
+        print("This might take a moment on first run...")
+        
+        try:
+            from transformers import MarianMTModel, MarianTokenizer
+            
+            # English -> Spanish
+            self.en_es_tokenizer = MarianTokenizer.from_pretrained("Helsinki-NLP/opus-mt-en-es")
+            self.en_es_model = MarianMTModel.from_pretrained("Helsinki-NLP/opus-mt-en-es")
+            
+            # Spanish -> English
+            self.es_en_tokenizer = MarianTokenizer.from_pretrained("Helsinki-NLP/opus-mt-es-en")
+            self.es_en_model = MarianMTModel.from_pretrained("Helsinki-NLP/opus-mt-es-en")
+            
+            print("✓ Models loaded successfully")
+            
+        except Exception as e:
+            print(f"Error loading models: {e}")
+            print("Install transformers: pip install transformers")
+            sys.exit(1)
+        
+        # Base sentences for back-translation
+        self.base_sentences = [
+            "The rapid advancement of technology has transformed modern society.",
+            "Climate change poses significant challenges to global ecosystems.",
+            "Effective communication is essential for successful collaboration.",
+            "Innovation drives economic growth and competitiveness.",
+            "Education plays a crucial role in personal development.",
+            "Data analysis helps organizations make informed decisions.",
+            "Quality assurance ensures product reliability and customer satisfaction.",
+            "Research and development accelerate scientific progress.",
+            "Digital transformation changes how businesses operate.",
+            "Sustainable practices protect environmental resources.",
+        ]
+
+
+class CorpusBasedGenerator:
+    """Generate synthetic data from public domain corpus"""
+    
+    def __init__(self, corpus_file: str = None):
+        """Initialize corpus-based generator"""
+        if corpus_file and os.path.exists(corpus_file):
+            self.corpus_file = corpus_file
+            print(f"Loading corpus from {corpus_file}...")
+            with open(corpus_file, 'r', encoding='utf-8') as f:
+                corpus_data = json.load(f)
+            self.pairs = [(p["source"], p["target"]) for p in corpus_data.get("pairs", [])]
+            print(f"✓ Loaded {len(self.pairs)} translation pairs from corpus")
+        else:
+            print("No corpus file provided or file not found.")
+            print("Building corpus from public domain books...")
+            # Import and use public domain corpus builder
+            sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..', 'src'))
+            try:
+                from public_domain_corpus import PublicDomainCorpus
+                corpus = PublicDomainCorpus()
+                # Build a small corpus with one book
+                corpus_file = corpus.build_corpus_dataset(
+                    output_dir="./corpus_data",
+                    books=["alice_wonderland"],  # Start with Alice in Wonderland
+                    pairs_per_book=500
+                )
+                self.corpus_file = corpus_file
+                # Reload the pairs
+                with open(corpus_file, 'r', encoding='utf-8') as f:
+                    corpus_data = json.load(f)
+                self.pairs = [(p["source"], p["target"]) for p in corpus_data.get("pairs", [])]
+            except Exception as e:
+                print(f"Error building corpus: {e}")
+                print("Falling back to empty corpus")
+                self.pairs = []
+    
+    def generate_pair(self, source_lang: str, target_lang: str,
+                     domain: str, text_type: str) -> Tuple[str, str]:
+        """Generate pair from corpus"""
+        if not self.pairs:
+            return "", ""
+        
+        # Return a random pair from corpus
+        return random.choice(self.pairs)
+
+
+class BackTranslationGenerator:
+    """Generate synthetic data using back-translation technique"""
+    
+    def __init__(self):
+        """Initialize back-translation generator"""
         try:
             from transformers import MarianMTModel, MarianTokenizer
             
@@ -759,6 +846,8 @@ class FreeSyntheticDataGenerator:
             self.generator = RuleBasedGenerator()
         elif method == "backtranslation":
             self.generator = BackTranslationGenerator()
+        elif method == "corpus":
+            self.generator = CorpusBasedGenerator(kwargs.get("corpus_file"))
         else:
             raise ValueError(f"Unknown method: {method}")
         
@@ -929,7 +1018,7 @@ Methods comparison:
     
     parser.add_argument(
         '-m', '--method',
-        choices=['ollama', 'opensource', 'huggingface', 'rulebased', 'backtranslation'],
+        choices=['ollama', 'opensource', 'huggingface', 'rulebased', 'backtranslation', 'corpus'],
         default='rulebased',
         help='Generation method (default: rulebased)'
     )
@@ -970,6 +1059,11 @@ Methods comparison:
         help='HuggingFace text generation model (default: flan-t5). Recommended: flan-t5-xl for best quality'
     )
     
+    parser.add_argument(
+        '--corpus-file',
+        help='Path to public domain corpus file for corpus-based generation'
+    )
+    
     args = parser.parse_args()
     
     try:
@@ -978,7 +1072,8 @@ Methods comparison:
             ollama_model=args.ollama_model,
             os_model=args.os_model,
             hf_token=args.hf_token,
-            hf_text_model=args.hf_text_model
+            hf_text_model=args.hf_text_model,
+            corpus_file=args.corpus_file
         )
         
         generator.generate_dataset(
