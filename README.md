@@ -1,2 +1,1 @@
-# Web-scrapping-especifico
-Un codigo para hacer web scrapping
+Traductor de pdfs personal
