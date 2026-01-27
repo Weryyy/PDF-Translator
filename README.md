@@ -14,6 +14,9 @@ Un traductor de PDFs personal que utiliza modelos de lenguaje para traducir docu
 - ✅ Soporta múltiples idiomas
 - ✅ Procesa documentos largos dividiéndolos en chunks
 - ✅ Interfaz de línea de comandos fácil de usar
+- ✅ Soporte para Docker (deployment aislado y portable)
+- ✅ Scripts de instalación automática para Windows/Linux/Mac
+- ✅ Organización modular de archivos
 
 ## Modos de Operación
 
@@ -31,13 +34,93 @@ Entrena tu propio modelo con datos sintéticos y úsalo localmente.
 
 ## Instalación
 
+### Opción 1: Instalación Automática (Recomendado)
+
+**Windows:**
+```bash
+git clone https://github.com/Weryyy/PDF-Translator.git
+cd PDF-Translator
+install.bat
+```
+
+**Linux/Mac:**
+```bash
+git clone https://github.com/Weryyy/PDF-Translator.git
+cd PDF-Translator
+chmod +x install.sh
+./install.sh
+```
+
+Los scripts de instalación automática:
+- ✅ Crean un entorno virtual de Python
+- ✅ Instalan todas las dependencias necesarias
+- ✅ Opcionalmente instalan optimizaciones GPU
+- ✅ Crean el archivo de configuración
+- ✅ Verifican las optimizaciones disponibles
+
+### Opción 2: Instalación con Docker (Aislado y Portable)
+
+**Requisitos:**
+- Docker instalado
+- Docker Compose instalado (opcional pero recomendado)
+
+**Usando Docker Compose (Recomendado):**
+```bash
+git clone https://github.com/Weryyy/PDF-Translator.git
+cd PDF-Translator
+
+# Crear archivo de configuración
+cp config/config.example.json config/config.json
+# Edita config/config.json con tu configuración
+
+# Iniciar contenedor
+docker-compose up -d pdf-translator
+
+# Acceder al contenedor
+docker-compose exec pdf-translator bash
+
+# Traducir un PDF
+python src/translate_pdf.py pdfs/documento.pdf
+```
+
+**Con GPU (requiere nvidia-docker):**
+```bash
+# Iniciar contenedor con soporte GPU
+docker-compose --profile gpu up -d pdf-translator-gpu
+
+# Acceder al contenedor GPU
+docker-compose exec pdf-translator-gpu bash
+```
+
+**Usando Docker directamente:**
+```bash
+# Construir imagen
+docker build -t pdf-translator .
+
+# Ejecutar contenedor
+docker run -it -v $(pwd)/pdfs:/app/pdfs -v $(pwd)/output:/app/output pdf-translator
+```
+
+### Opción 3: Instalación Manual
+
 1. Clona este repositorio:
 ```bash
 git clone https://github.com/Weryyy/PDF-Translator.git
 cd PDF-Translator
 ```
 
-2. Instala las dependencias:
+2. Crea y activa un entorno virtual:
+```bash
+# Windows
+python -m venv venv
+venv\Scripts\activate
+
+# Linux/Mac
+python3 -m venv venv
+source venv/bin/activate
+```
+
+3. Instala las dependencias:
 
 **Instalación básica (CPU):**
 ```bash
@@ -53,26 +136,24 @@ pip install -r requirements.txt
 pip install -r requirements-gpu.txt
 ```
 
-3. Verifica las optimizaciones disponibles:
+4. Verifica las optimizaciones disponibles:
 ```bash
-python check_optimizations.py
+python scripts/check_optimizations.py
 ```
 
-Este script te mostrará qué optimizaciones están activas en tu sistema y las mejoras de rendimiento esperadas.
-
-4. Configura según el modo que quieras usar:
+5. Configura según el modo que quieras usar:
 
 **Modo 1 - API de OpenAI:**
 ```bash
-cp config.example.json config.json
-# Edita config.json y añade tu clave API
+cp config/config.example.json config/config.json
+# Edita config/config.json y añade tu clave API
 # Asegúrate de que "use_local_model": false
 ```
 
 **Modo 2 - Modelo Local:**
 ```bash
-cp config.example.json config.json
-# Edita config.json y establece "use_local_model": true
+cp config/config.example.json config/config.json
+# Edita config/config.json y establece "use_local_model": true
 ```
 
 ## Uso
@@ -81,12 +162,17 @@ cp config.example.json config.json
 
 Traducir un PDF:
 ```bash
-python translate_pdf.py "documento.pdf"
+python src/translate_pdf.py "documento.pdf"
 ```
 
 Con opciones:
 ```bash
-python translate_pdf.py "documento.pdf" -o "output.pdf" -l en
+python src/translate_pdf.py "documento.pdf" -o "output.pdf" -l en
+```
+
+**En Docker:**
+```bash
+docker-compose exec pdf-translator python src/translate_pdf.py pdfs/documento.pdf
 ```
 
 ### Modo 2: Entrenar y Usar Modelo Propio
@@ -96,10 +182,10 @@ python translate_pdf.py "documento.pdf" -o "output.pdf" -l en
 Genera datos de entrenamiento usando IA:
 ```bash
 # Generar 1000 pares de traducción
-python generate_synthetic_data.py -n 1000 -b 100
+python scripts/generate_synthetic_data.py -n 1000 -b 100
 
 # Para un dataset más grande (por ejemplo, ~10GB con 100k pares)
-python generate_synthetic_data.py -n 100000 -b 1000 -s English -t Spanish
+python scripts/generate_synthetic_data.py -n 100000 -b 1000 -s English -t Spanish
 ```
 
 Los datos se guardan en formato Parquet (optimizado para I/O rápido).
@@ -108,12 +194,12 @@ Los datos se guardan en formato Parquet (optimizado para I/O rápido).
 
 Entrena tu modelo con los datos sintéticos:
 ```bash
-python train_model_hpc.py -d synthetic_data
+python scripts/train_model_hpc.py -d synthetic_data
 ```
 
 Con optimización de hiperparámetros:
 ```bash
-python train_model_hpc.py -d synthetic_data --optimize
+python scripts/train_model_hpc.py -d synthetic_data --optimize
 ```
 
 El modelo entrenado se guarda en `./models/translation_model/`
@@ -122,18 +208,18 @@ El modelo entrenado se guarda en `./models/translation_model/`
 
 Opción A - Usar el traductor de PDF:
 ```bash
-# Asegúrate de que config.json tenga "use_local_model": true
-python translate_pdf.py "documento.pdf"
+# Asegúrate de que config/config.json tenga "use_local_model": true
+python src/translate_pdf.py "documento.pdf"
 ```
 
 Opción B - Usar motor de inferencia GPU directamente:
 ```bash
-python gpu_inference.py -m ./models/translation_model -f input.txt -o output.txt
+python src/gpu_inference.py -m ./models/translation_model -f input.txt -o output.txt
 ```
 
 Benchmark de rendimiento:
 ```bash
-python gpu_inference.py -m ./models/translation_model -f input.txt --benchmark
+python src/gpu_inference.py -m ./models/translation_model -f input.txt --benchmark
 ```
 
 ## Ejemplos Completos
@@ -144,27 +230,41 @@ python gpu_inference.py -m ./models/translation_model -f input.txt --benchmark
 export OPENAI_API_KEY="tu-clave-api"
 
 # Traducir
-python translate_pdf.py "Mushoku Tensei Redundant Reincarnation Vol. 3.pdf" -l es
+python src/translate_pdf.py "Mushoku Tensei Redundant Reincarnation Vol. 3.pdf" -l es
 ```
 
 ### Ejemplo 2: Pipeline completo con modelo propio
 ```bash
 # 1. Generar datos
-python generate_synthetic_data.py -n 5000 -b 500
+python scripts/generate_synthetic_data.py -n 5000 -b 500
 
 # 2. Entrenar modelo
-python train_model_hpc.py -d synthetic_data
+python scripts/train_model_hpc.py -d synthetic_data
 
 # 3. Configurar para usar modelo local
-echo '{"use_local_model": true, "local_model_path": "./models/translation_model"}' > config.json
+echo '{"use_local_model": true, "local_model_path": "./models/translation_model"}' > config/config.json
 
 # 4. Traducir PDF
-python translate_pdf.py "documento.pdf" -o "traducido.pdf"
+python src/translate_pdf.py "documento.pdf" -o "traducido.pdf"
+```
+
+### Ejemplo 3: Usando Docker
+```bash
+# 1. Iniciar contenedor
+docker-compose up -d pdf-translator
+
+# 2. Copiar PDF al directorio pdfs/
+cp mi-documento.pdf pdfs/
+
+# 3. Traducir dentro del contenedor
+docker-compose exec pdf-translator python src/translate_pdf.py pdfs/mi-documento.pdf
+
+# 4. El resultado estará en output/
 ```
 
 ## Configuración
 
-### config.json - Configuración Principal
+### config/config.json - Configuración Principal
 
 ```json
 {
@@ -178,7 +278,7 @@ python translate_pdf.py "documento.pdf" -o "traducido.pdf"
 }
 ```
 
-### training_config.json - Configuración de Entrenamiento
+### config/training_config.json - Configuración de Entrenamiento
 
 ```json
 {
@@ -231,7 +331,7 @@ El sistema **detecta y activa automáticamente** todas las optimizaciones dispon
 ### Verificar Optimizaciones
 
 ```bash
-python check_optimizations.py
+python scripts/check_optimizations.py
 ```
 
 Este comando muestra:
@@ -273,18 +373,32 @@ python check_optimizations.py
 
 ```
 PDF-Translator/
-├── translate_pdf.py              # Script principal de traducción
-├── generate_synthetic_data.py    # Generador de datos sintéticos
-├── train_model_hpc.py           # Pipeline de entrenamiento HPC
-├── gpu_inference.py             # Motor de inferencia GPU
-├── example_usage.py             # Ejemplos de uso
-├── requirements.txt             # Dependencias
-├── config.example.json          # Configuración ejemplo
-├── training_config.json         # Configuración de entrenamiento
-├── .gitignore                   # Archivos ignorados
-├── README.md                    # Este archivo
-├── synthetic_data/              # Datos generados (creado automáticamente)
-└── models/                      # Modelos entrenados (creado automáticamente)
+├── src/                          # Código fuente principal
+│   ├── translate_pdf.py          # Script principal de traducción
+│   ├── gpu_inference.py          # Motor de inferencia GPU
+│   └── example_usage.py          # Ejemplos de uso
+├── scripts/                      # Scripts de utilidad
+│   ├── generate_synthetic_data.py  # Generador de datos sintéticos
+│   ├── train_model_hpc.py       # Pipeline de entrenamiento HPC
+│   └── check_optimizations.py   # Verificador de optimizaciones
+├── config/                       # Archivos de configuración
+│   ├── config.example.json      # Configuración ejemplo
+│   └── training_config.json     # Configuración de entrenamiento
+├── docs/                         # Documentación adicional
+├── models/                       # Modelos entrenados (creado automáticamente)
+├── synthetic_data/               # Datos generados (creado automáticamente)
+├── output/                       # Archivos de salida
+├── translations/                 # PDFs traducidos
+├── pdfs/                         # PDFs de entrada
+├── requirements.txt              # Dependencias base
+├── requirements-gpu.txt          # Dependencias GPU opcionales
+├── Dockerfile                    # Configuración Docker
+├── docker-compose.yml            # Orquestación Docker
+├── .dockerignore                 # Archivos ignorados por Docker
+├── install.bat                   # Script instalación Windows
+├── install.sh                    # Script instalación Linux/Mac
+├── .gitignore                    # Archivos ignorados por Git
+└── README.md                     # Este archivo
 ```
 
 ## Ventajas del Modelo Local vs API
@@ -323,11 +437,11 @@ Consulta los [precios actuales de OpenAI](https://openai.com/pricing) para más 
 ## Solución de Problemas
 
 ### Error: "OpenAI API key not found"
-- Asegúrate de haber configurado la clave API en `config.json` o como variable de entorno
+- Asegúrate de haber configurado la clave API en `config/config.json` o como variable de entorno
 - O cambia a modelo local con `"use_local_model": true`
 
 ### Error: "Local model not found"
-- Entrena un modelo primero con `train_model_hpc.py`
+- Entrena un modelo primero con `scripts/train_model_hpc.py`
 - O verifica la ruta en `local_model_path` del config
 
 ### Error: "No text extracted from PDF"

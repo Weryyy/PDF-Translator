@@ -40,6 +40,7 @@ config.json
 *_translated.pdf
 output/
 translations/
+pdfs/
 
 # Training and model files
 models/

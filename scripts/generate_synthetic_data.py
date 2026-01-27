@@ -54,7 +54,7 @@ class SyntheticDataGenerator:
         "paragraph": (10, 20)
     }
     
-    def __init__(self, config_path: str = "config.json"):
+    def __init__(self, config_path: str = "config/config.json"):
         """Initialize the data generator"""
         self.config = self._load_config(config_path)
         self.client = OpenAI(api_key=self.config["openai_api_key"])
@@ -291,7 +291,7 @@ def main():
     
     parser.add_argument(
         '-c', '--config',
-        default='config.json',
+        default='config/config.json',
         help='Path to configuration file'
     )
     
