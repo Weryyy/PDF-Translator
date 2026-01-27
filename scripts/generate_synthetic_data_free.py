@@ -363,9 +363,9 @@ class HuggingFaceGenerator:
             model = self.text_model
         
         try:
-            # Use text generation API
+            # Use text generation API (usando nuevo endpoint de HuggingFace)
             response = self.requests.post(
-                f"https://api-inference.huggingface.co/models/{model}",
+                f"https://router.huggingface.co/models/{model}",
                 headers=self.headers,
                 json={
                     "inputs": prompt,
@@ -396,6 +396,11 @@ class HuggingFaceGenerator:
                     return text
                 
                 return str(result).strip()
+                
+            elif response.status_code == 401:
+                print(f"❌ Error 401: Token inválido o no autenticado")
+                print(f"⚠️  Sin token válido, cambiando a generador basado en reglas...")
+                return None
                 
             elif response.status_code == 503:
                 print(f"⏳ Modelo cargándose... (primera vez puede tardar ~20 segundos)")
@@ -441,7 +446,7 @@ class HuggingFaceGenerator:
         
         try:
             response = self.requests.post(
-                f"https://api-inference.huggingface.co/models/{model}",
+                f"https://router.huggingface.co/models/{model}",
                 headers=self.headers,
                 json={"inputs": text},
                 timeout=30
