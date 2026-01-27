@@ -7,6 +7,7 @@ import sys
 import os
 import json
 import argparse
+import re
 from pathlib import Path
 from typing import Optional, Dict, Any
 
@@ -254,7 +255,6 @@ class PDFTranslator:
                 # If single paragraph is too long, split by sentences
                 if len(para) > max_size:
                     # Simple sentence boundary detection
-                    import re
                     sentences = re.split(r'(?<=[.!?])\s+', para)
                     temp_chunk = ""
                     for sent in sentences:

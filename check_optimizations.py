@@ -160,9 +160,13 @@ def check_ml_frameworks():
         import xgboost
         print(f"✓ XGBoost {xgboost.__version__}")
         
-        # Check GPU support
-        if hasattr(xgboost, 'gpu_hist'):
-            print("  ✓ GPU histogram tree method available")
+        # Check GPU support by attempting to detect CUDA availability
+        try:
+            import torch
+            if torch.cuda.is_available():
+                print("  ✓ GPU available for XGBoost acceleration")
+        except:
+            pass
     except ImportError:
         print("⚠ XGBoost not available")
     

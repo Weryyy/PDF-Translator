@@ -230,7 +230,7 @@ class GPUInferenceEngine:
         for i in range(num_runs):
             start = time.time()
             _ = self.translate(text)
-            elapsed = start - time.time()
+            elapsed = time.time() - start
             times.append(elapsed)
             print(f"Run {i+1}/{num_runs}: {elapsed:.3f}s")
         

@@ -191,9 +191,7 @@ Provide only the translation, no explanations."""
             write_statistics=True,    # Enable statistics for faster queries
             version='2.6',            # Latest Parquet format
             compression_level=None,   # Use default for snappy (fastest)
-            use_byte_stream_split=False,
-            data_page_size=None,
-            flavour='spark'           # Compatible with Apache Spark/Arrow
+            use_byte_stream_split=False
         )
         
         file_size = output_file.stat().st_size / (1024 * 1024)  # MB
