@@ -1,0 +1,9 @@
+{
+  "openai_api_key": "your-api-key-here",
+  "model": "gpt-3.5-turbo",
+  "source_language": "auto",
+  "target_language": "es",
+  "max_tokens": 2000,
+  "use_local_model": false,
+  "local_model_path": "./models/translation_model"
+}
