@@ -1,9 +1,30 @@
 # PDF Translator
 
-Un traductor de PDFs personal que utiliza modelos de lenguaje para traducir documentos PDF a diferentes idiomas. Soporta tanto la API de OpenAI como modelos propios entrenados con datos sintéticos.
+Un traductor de PDFs personal que utiliza modelos de lenguaje para traducir documentos PDF a diferentes idiomas. Soporta tanto la API de OpenAI como modelos propios entrenados con **datos sintéticos 100% GRATUITOS**.
+
+## 🆕 NUEVO: Generación de Datos Sintéticos GRATIS
+
+Ya no necesitas pagar por APIs para entrenar tu modelo. **5 métodos gratuitos disponibles:**
+
+1. **🤗 Hugging Face** - API gratuita, modelos de última generación (FLAN-T5, Mistral, BLOOM)
+2. **Ollama** - LLMs locales gratuitos (Llama 2, Mistral)
+3. **Open Source Models** - GPT-2, BLOOM corriendo localmente
+4. **Rule-based** - Plantillas y reglas, extremadamente rápido
+5. **Back-translation** - Técnica de traducción bidireccional
+
+**📖 Ver guías completas:**
+- [Guía Hugging Face](docs/HUGGINGFACE_GUIDE.md) - Método recomendado, API gratuita
+- [Todos los Métodos Gratuitos](docs/SYNTHETIC_DATA_FREE.md) - Comparación completa
+
+**🚀 Demo rápido:**
+```bash
+python demo_huggingface.py
+```
 
 ## 📚 Documentación
 
+- **[🤗 Guía Hugging Face](docs/HUGGINGFACE_GUIDE.md)** - Generar datos GRATIS con HuggingFace
+- **[💰 Métodos Gratuitos](docs/SYNTHETIC_DATA_FREE.md)** - Todas las opciones sin costo
 - **[Guía de Inicio Rápido](docs/QUICKSTART.md)** - Empieza en 5 minutos
 - **[Guía de Docker](docs/DOCKER.md)** - Deployment con contenedores
 - **README.md** - Documentación completa (este archivo)
@@ -13,7 +34,8 @@ Un traductor de PDFs personal que utiliza modelos de lenguaje para traducir docu
 - ✅ Extrae texto de archivos PDF
 - ✅ Traduce usando modelos de lenguaje avanzados (GPT-3.5/GPT-4)
 - ✅ Opción de usar modelos propios entrenados localmente
-- ✅ Generación de datos sintéticos para entrenamiento
+- ✅ **NUEVO:** Generación de datos sintéticos 100% GRATUITOS
+- ✅ **5 métodos gratuitos** para generar datos (HuggingFace, Ollama, etc.)
 - ✅ Pipeline de entrenamiento optimizado con HPC
 - ✅ Motor de inferencia GPU-acelerado
 - ✅ Genera un nuevo PDF con el texto traducido
@@ -28,15 +50,18 @@ Un traductor de PDFs personal que utiliza modelos de lenguaje para traducir docu
 
 ### Modo 1: API de OpenAI (Rápido y Sencillo)
 Usa la API de OpenAI para traducir sin necesidad de entrenar modelos.
+**Costo:** ~$0.002 por cada 1K tokens
 
-### Modo 2: Modelo Local (Sin costos de API)
-Entrena tu propio modelo con datos sintéticos y úsalo localmente.
+### Modo 2: Modelo Local (Sin costos de API) ⭐
+Entrena tu propio modelo con datos sintéticos **GRATUITOS** y úsalo localmente.
+**Costo:** $0.00 (completamente gratis)
 
 ## Requisitos
 
 - Python 3.7 o superior
-- Para Modo 1: Clave API de OpenAI
-- Para Modo 2: GPU NVIDIA recomendada (opcional pero acelera entrenamiento e inferencia)
+- Para Modo 1: Clave API de OpenAI (de pago)
+- Para Modo 2: **TODO GRATIS** - Sin APIs de pago necesarias
+  - GPU NVIDIA recomendada (opcional pero acelera entrenamiento e inferencia)
 
 ## Instalación
 
@@ -181,12 +206,100 @@ python src/translate_pdf.py "documento.pdf" -o "output.pdf" -l en
 docker-compose exec pdf-translator python src/translate_pdf.py pdfs/documento.pdf
 ```
 
-### Modo 2: Entrenar y Usar Modelo Propio
+### Modo 2: Entrenar y Usar Modelo Propio (100% GRATIS)
 
-#### Paso 1: Generar Datos Sintéticos
+#### Paso 1: Generar Datos Sintéticos GRATIS
 
-Genera datos de entrenamiento usando IA:
+**🤗 Opción A: Hugging Face (Recomendado)**
+
+API gratuita con modelos de última generación:
+
 ```bash
+# Ver demo interactivo
+python demo_huggingface.py
+
+# Generar 500 pares con FLAN-T5 (equilibrio perfecto)
+python scripts/generate_synthetic_data_free.py -n 500 -m huggingface
+
+# Generar 1000 pares con FLAN-T5-XL (máxima calidad)
+python scripts/generate_synthetic_data_free.py -n 1000 -m huggingface --hf-text-model flan-t5-xl --hf-token TU_TOKEN
+
+# Generar con Mistral (última generación)
+python scripts/generate_synthetic_data_free.py -n 500 -m huggingface --hf-text-model mistral
+```
+
+**📖 Guía completa:** [docs/HUGGINGFACE_GUIDE.md](docs/HUGGINGFACE_GUIDE.md)
+
+**🚀 Opción B: Rule-based (Más Rápido)**
+
+Sin configuración, extremadamente rápido:
+
+```bash
+# Generar 10,000 pares (muy rápido)
+python scripts/generate_synthetic_data_free.py -n 10000 -m rulebased
+```
+
+**🤖 Opción C: Open Source Models (GPT-2, BLOOM)**
+
+Modelos open source corriendo localmente:
+
+```bash
+# Con GPT-2
+python scripts/generate_synthetic_data_free.py -n 1000 -m opensource --os-model gpt2
+
+# Con GPT-2 Large (mejor calidad)
+python scripts/generate_synthetic_data_free.py -n 1000 -m opensource --os-model gpt2-large
+
+# Con BLOOM (multilingüe)
+python scripts/generate_synthetic_data_free.py -n 1000 -m opensource --os-model bloom-560m
+```
+
+**🔄 Opción D: Back-translation**
+
+Alta calidad con modelos gratuitos:
+
+```bash
+# Generar 5000 pares con back-translation
+python scripts/generate_synthetic_data_free.py -n 5000 -m backtranslation
+```
+
+**🦙 Opción E: Ollama**
+
+LLMs locales de alta calidad:
+
+```bash
+# Primero instalar Ollama: https://ollama.ai/
+ollama pull llama2
+
+# Generar datos
+python scripts/generate_synthetic_data_free.py -n 1000 -m ollama --ollama-model llama2
+```
+
+**💡 Estrategia Combinada (Recomendado):**
+
+Para máxima calidad y cantidad:
+
+```bash
+# 1. Base rápida (5000 pares)
+python scripts/generate_synthetic_data_free.py -n 5000 -m rulebased
+
+# 2. Variedad con back-translation (3000 pares)
+python scripts/generate_synthetic_data_free.py -n 3000 -m backtranslation
+
+# 3. Alta calidad con HuggingFace (2000 pares)
+python scripts/generate_synthetic_data_free.py -n 2000 -m huggingface --hf-text-model flan-t5-xl
+
+# Total: 10,000 pares con excelente diversidad - $0.00 de costo
+```
+
+**📊 Ver comparación completa:** [docs/SYNTHETIC_DATA_FREE.md](docs/SYNTHETIC_DATA_FREE.md)
+
+---
+
+**Método antiguo (requiere pago):**
+
+```bash
+# Con API de OpenAI (REQUIERE PAGO - ya no necesario)
 # Generar 1000 pares de traducción
 python scripts/generate_synthetic_data.py -n 1000 -b 100
 
