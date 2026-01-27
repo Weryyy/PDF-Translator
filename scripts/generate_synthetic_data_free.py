@@ -415,7 +415,7 @@ class HuggingFaceGenerator:
                 try:
                     error_detail = response.json()
                     print(f"   Detalle: {error_detail}")
-                except:
+                except Exception:
                     pass
                 return None
                 

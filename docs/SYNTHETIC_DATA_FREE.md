@@ -195,9 +195,8 @@ python scripts/generate_synthetic_data_free.py -n 1000 -m opensource --os-model 
 | **HuggingFace** 🤗 | $0 | ⭐⭐⭐⭐⭐ | ⭐⭐⭐ | ~1k/hr | ⭐⭐⭐⭐⭐ | Sí |
 | **Ollama** | $0 | ⭐⭐⭐⭐⭐ | ⭐⭐⭐⭐ | ∞ | ⭐⭐⭐ | No* |
 | **Open Source** | $0 | ⭐⭐⭐⭐ | ⭐⭐⭐⭐ | ∞ | ⭐⭐⭐⭐ | No* |
-| **Rule-based** | $0 | ⭐⭐⭐ | ⭐⭐⭐⭐⭐ | ∞ | Fácil | No* |
-| **Back-translation** | $0 | ⭐⭐⭐⭐ | ⭐⭐⭐ | ∞ | Fácil | No* |
-| **HuggingFace** | $0 | ⭐⭐⭐⭐ | ⭐⭐ | ~1k/hr | Fácil | Sí |
+| **Rule-based** | $0 | ⭐⭐⭐ | ⭐⭐⭐⭐⭐ | ∞ | ⭐⭐⭐⭐⭐ | No* |
+| **Back-translation** | $0 | ⭐⭐⭐⭐ | ⭐⭐⭐ | ∞ | ⭐⭐⭐⭐ | No* |
 | *OpenAI* | *$$* | *⭐⭐⭐⭐⭐* | *⭐⭐⭐⭐⭐* | *Pago* | *Fácil* | *Sí* |
 
 \* Después de la instalación inicial
