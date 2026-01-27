@@ -91,3 +91,9 @@ echo ""
 
 echo "Installation script completed. Virtual environment is active."
 echo "To deactivate, run: deactivate"
+echo ""
+
+# Check optimizations (while still in virtual environment)
+echo "Checking installed optimizations..."
+python scripts/check_optimizations.py
+echo ""

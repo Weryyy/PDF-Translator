@@ -84,6 +84,12 @@ if not exist "output" mkdir output
 if not exist "translations" mkdir translations
 if not exist "pdfs" mkdir pdfs
 
+REM Check optimizations while still in virtual environment
+echo.
+echo Checking installed optimizations...
+python scripts\check_optimizations.py
+echo.
+
 echo ========================================
 echo Installation completed successfully!
 echo ========================================
@@ -94,11 +100,6 @@ echo 2. Run: venv\Scripts\activate.bat (to activate virtual environment)
 echo 3. Run: python src\translate_pdf.py your-file.pdf (to translate a PDF)
 echo.
 echo For more information, see README.md
-echo.
-
-REM Check optimizations
-echo Checking installed optimizations...
-python scripts\check_optimizations.py
 echo.
 
 pause
