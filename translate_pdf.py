@@ -16,7 +16,7 @@ try:
     from reportlab.platypus import SimpleDocTemplate, Paragraph, Spacer
     from reportlab.lib.styles import getSampleStyleSheet
     from reportlab.lib.units import inch
-    import openai
+    from openai import OpenAI
     from dotenv import load_dotenv
 except ImportError as e:
     print(f"Error: Required library not found: {e}")
@@ -65,7 +65,7 @@ class PDFTranslator:
     
     def _setup_openai(self):
         """Setup OpenAI client"""
-        openai.api_key = self.config["openai_api_key"]
+        self.client = OpenAI(api_key=self.config["openai_api_key"])
     
     def extract_text_from_pdf(self, pdf_path: str) -> str:
         """Extract text from PDF file"""
@@ -109,7 +109,7 @@ class PDFTranslator:
             print(f"Translating chunk {i}/{len(chunks)}...")
             
             try:
-                response = openai.ChatCompletion.create(
+                response = self.client.chat.completions.create(
                     model=self.config["model"],
                     messages=[
                         {"role": "system", "content": f"You are a professional translator. Translate the following text to {target_lang}. Maintain the original formatting and structure."},
@@ -146,15 +146,20 @@ class PDFTranslator:
                     chunks.append(current_chunk)
                 # If single paragraph is too long, split by sentences
                 if len(para) > max_size:
-                    sentences = para.split('. ')
+                    # Simple sentence boundary detection
+                    import re
+                    sentences = re.split(r'(?<=[.!?])\s+', para)
                     temp_chunk = ""
                     for sent in sentences:
-                        if len(temp_chunk) + len(sent) + 2 <= max_size:
-                            temp_chunk += sent + ". "
+                        if len(temp_chunk) + len(sent) + 1 <= max_size:
+                            if temp_chunk:
+                                temp_chunk += " " + sent
+                            else:
+                                temp_chunk = sent
                         else:
                             if temp_chunk:
                                 chunks.append(temp_chunk)
-                            temp_chunk = sent + ". "
+                            temp_chunk = sent
                     if temp_chunk:
                         current_chunk = temp_chunk
                 else:
