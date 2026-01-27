@@ -2,6 +2,12 @@
 
 Un traductor de PDFs personal que utiliza modelos de lenguaje para traducir documentos PDF a diferentes idiomas. Soporta tanto la API de OpenAI como modelos propios entrenados con datos sintéticos.
 
+## 📚 Documentación
+
+- **[Guía de Inicio Rápido](docs/QUICKSTART.md)** - Empieza en 5 minutos
+- **[Guía de Docker](docs/DOCKER.md)** - Deployment con contenedores
+- **README.md** - Documentación completa (este archivo)
+
 ## Características
 
 - ✅ Extrae texto de archivos PDF
