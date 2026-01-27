@@ -37,7 +37,7 @@ except ImportError as e:
 class PDFTranslator:
     """Main class for PDF translation functionality"""
     
-    def __init__(self, config_path: str = "config.json"):
+    def __init__(self, config_path: str = "config/config.json"):
         """Initialize the PDF translator with configuration"""
         self.config = self._load_config(config_path)
         self.use_local_model = self.config.get("use_local_model", False)
@@ -75,8 +75,8 @@ class PDFTranslator:
             api_key = config.get("openai_api_key") or os.getenv("OPENAI_API_KEY")
             if not api_key or api_key == "your-api-key-here":
                 print("Error: OpenAI API key not found!")
-                print("Please set OPENAI_API_KEY environment variable or add it to config.json")
-                print("Or set 'use_local_model': true in config.json to use a local model")
+                print("Please set OPENAI_API_KEY environment variable or add it to config/config.json")
+                print("Or set 'use_local_model': true in config/config.json to use a local model")
                 sys.exit(1)
             config["openai_api_key"] = api_key
         
@@ -367,8 +367,8 @@ Examples:
     
     parser.add_argument(
         '-c', '--config',
-        help='Path to configuration file (default: config.json)',
-        default='config.json'
+        help='Path to configuration file (default: config/config.json)',
+        default='config/config.json'
     )
     
     args = parser.parse_args()

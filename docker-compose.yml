@@ -1,0 +1,49 @@
+version: '3.8'
+
+services:
+  pdf-translator:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      target: base
+    container_name: pdf-translator
+    volumes:
+      # Mount local directories for persistent data
+      - ./models:/app/models
+      - ./synthetic_data:/app/synthetic_data
+      - ./output:/app/output
+      - ./translations:/app/translations
+      # Mount a directory for PDF files to translate
+      - ./pdfs:/app/pdfs
+      # Mount config file (create config.json from config.example.json first)
+      - ./config/config.json:/app/config/config.json:ro
+    environment:
+      # Optional: Set OpenAI API key via environment variable
+      - OPENAI_API_KEY=${OPENAI_API_KEY:-}
+    stdin_open: true
+    tty: true
+    command: /bin/bash
+
+  # GPU-enabled variant (requires nvidia-docker)
+  pdf-translator-gpu:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      target: gpu
+    container_name: pdf-translator-gpu
+    runtime: nvidia
+    environment:
+      - NVIDIA_VISIBLE_DEVICES=all
+      - OPENAI_API_KEY=${OPENAI_API_KEY:-}
+    volumes:
+      - ./models:/app/models
+      - ./synthetic_data:/app/synthetic_data
+      - ./output:/app/output
+      - ./translations:/app/translations
+      - ./pdfs:/app/pdfs
+      - ./config/config.json:/app/config/config.json:ro
+    stdin_open: true
+    tty: true
+    command: /bin/bash
+    profiles:
+      - gpu

@@ -48,7 +48,7 @@ except ImportError as e:
 class HPCTranslationTrainer:
     """HPC-optimized translation model trainer"""
     
-    def __init__(self, config_path: str = "training_config.json"):
+    def __init__(self, config_path: str = "config/training_config.json"):
         """Initialize the trainer with automatic optimization detection"""
         self.config = self._load_config(config_path)
         self.device = "cuda" if torch.cuda.is_available() else "cpu"
@@ -418,7 +418,7 @@ def main():
     
     parser.add_argument(
         '-c', '--config',
-        default='training_config.json',
+        default='config/training_config.json',
         help='Training configuration file'
     )
     
