@@ -88,7 +88,8 @@ class ContextAwareTranslator:
         context_parts = []
         context_parts.append("Previous context:")
         
-        for i, (src, tgt) in enumerate(self.context_history[-3:], 1):
+        # Use self.context_window instead of hardcoded value
+        for i, (src, tgt) in enumerate(self.context_history[-self.context_window:], 1):
             context_parts.append(f"{i}. Source: {src[:100]}...")
             context_parts.append(f"   Translation: {tgt[:100]}...")
         
@@ -108,6 +109,14 @@ class ContextAwareTranslator:
             
         Returns:
             List of (source, target) tuples
+            
+        Note:
+            This implementation uses linear search which is O(n) in corpus size.
+            For corpora larger than ~10,000 pairs, consider:
+            - Using sentence embeddings with approximate nearest neighbor search
+            - Implementing an inverted index for keyword-based retrieval
+            - Caching frequently queried results
+            - Limiting corpus size to most relevant pairs
         """
         if not self.translation_memory:
             return []

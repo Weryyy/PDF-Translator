@@ -161,13 +161,13 @@ Este script muestra:
 
 ### Archivos de Código
 
-1. **`src/public_domain_corpus.py`** (404 líneas)
+1. **`src/public_domain_corpus.py`** (383 líneas)
    - Descarga libros de Project Gutenberg
    - Extrae pares de oraciones paralelas
    - Construye corpus de traducción
    - CLI para construcción de corpus
 
-2. **`src/context_aware_translator.py`** (310 líneas)
+2. **`src/context_aware_translator.py`** (325 líneas)
    - Gestión de ventana de contexto
    - Memoria de traducción
    - Búsqueda de ejemplos similares

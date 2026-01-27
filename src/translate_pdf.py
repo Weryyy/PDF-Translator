@@ -33,6 +33,13 @@ except ImportError as e:
     print("Please install dependencies: pip install -r requirements.txt")
     sys.exit(1)
 
+# Optional: context-aware translation (import after main dependencies)
+try:
+    from context_aware_translator import ContextAwareTranslator, ContextAwareTranslationSession
+    CONTEXT_AWARE_AVAILABLE = True
+except ImportError:
+    CONTEXT_AWARE_AVAILABLE = False
+
 
 class PDFTranslator:
     """Main class for PDF translation functionality"""

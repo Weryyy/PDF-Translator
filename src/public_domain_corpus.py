@@ -213,7 +213,23 @@ class PublicDomainCorpus:
         Align parallel sentences from two texts
         
         Simple alignment based on relative position in text.
-        For better quality, could use sentence embeddings or other alignment methods.
+        
+        WARNING: This naive position-based alignment assumes sentences appear
+        in roughly the same order and proportion in both language versions.
+        This may not be accurate for:
+        - Literary translations with different chapter arrangements
+        - Books with cultural adaptations
+        - Texts with significant structural differences
+        
+        For production use:
+        - Manually validate a sample of aligned pairs
+        - Consider using sentence embeddings for better alignment
+        - Use books known to have parallel structure (e.g., Bible verses)
+        
+        For better alignment quality, consider implementing:
+        - Sentence embedding-based similarity matching
+        - Edit distance algorithms
+        - Professional alignment tools like Giza++
         """
         pairs = []
         

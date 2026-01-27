@@ -25,13 +25,14 @@ python src/translate_pdf.py documento.pdf
 
 ## 🆕 Generación de Datos Sintéticos GRATIS
 
-Ya no necesitas pagar por APIs para entrenar tu modelo. **5 métodos gratuitos disponibles:**
+Ya no necesitas pagar por APIs para entrenar tu modelo. **6 métodos gratuitos disponibles:**
 
-1. **🤗 Hugging Face** - API gratuita, modelos de última generación (FLAN-T5, Mistral, BLOOM)
-2. **Ollama** - LLMs locales gratuitos (Llama 2, Mistral)
-3. **Open Source Models** - GPT-2, BLOOM corriendo localmente
-4. **Rule-based** - Plantillas y reglas, extremadamente rápido
-5. **Back-translation** - Técnica de traducción bidireccional
+1. **🎯 Corpus** - Libros de dominio público (Don Quijote, Biblia, etc.)
+2. **🤗 Hugging Face** - API gratuita, modelos de última generación (FLAN-T5, Mistral, BLOOM)
+3. **Ollama** - LLMs locales gratuitos (Llama 2, Mistral)
+4. **Open Source Models** - GPT-2, BLOOM corriendo localmente
+5. **Rule-based** - Plantillas y reglas, extremadamente rápido
+6. **Back-translation** - Técnica de traducción bidireccional
 
 **📖 Ver guías completas:**
 - [Guía Hugging Face](docs/HUGGINGFACE_GUIDE.md) - Método recomendado, API gratuita
