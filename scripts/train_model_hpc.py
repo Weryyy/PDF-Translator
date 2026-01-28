@@ -12,6 +12,9 @@ from pathlib import Path
 from typing import List, Dict, Optional
 import time
 
+# Configure PyTorch memory allocator for better fragmentation handling
+os.environ['PYTORCH_CUDA_ALLOC_CONF'] = 'expandable_segments:True'
+
 try:
     import pyarrow.parquet as pq
     import pyarrow as pa
@@ -30,14 +33,9 @@ try:
     import optuna
     import mlflow
     
-    # Try to import RAPIDS (GPU acceleration)
-    try:
-        import cudf
-        RAPIDS_AVAILABLE = True
-        print("✓ RAPIDS (cuDF) available - GPU acceleration enabled")
-    except ImportError:
-        RAPIDS_AVAILABLE = False
-        print("⚠ RAPIDS not available - falling back to CPU")
+    # RAPIDS disabled due to CUDA version incompatibility (requires CUDA 11.0, system has 12.8)
+    RAPIDS_AVAILABLE = False
+    print("⚠ RAPIDS disabled - using standard PyTorch GPU acceleration")
         
 except ImportError as e:
     print(f"Error: Required library not found: {e}")
@@ -98,19 +96,20 @@ class HPCTranslationTrainer:
     def _load_config(self, config_path: str) -> Dict:
         """Load training configuration"""
         default_config = {
-            "model_name": "facebook/mbart-large-50-many-to-many-mmt",
-            "batch_size": 8,
-            "learning_rate": 2e-5,
+            "model_name": "Helsinki-NLP/opus-mt-en-es",  # Smaller model: 300M vs 1.2B params
+            "batch_size": 8,  # Can use larger batch size now
+            "gradient_accumulation_steps": 2,
+            "gradient_checkpointing": False,  # Not needed with smaller model
+            "learning_rate": 5e-5,
             "num_epochs": 3,
-            "max_length": 512,
-            "warmup_steps": 500,
+            "max_length": 256,
+            "warmup_steps": 100,
             "weight_decay": 0.01,
             "fp16": True,  # Mixed precision training
-            "gradient_accumulation_steps": 4,
-            "dataloader_num_workers": 4,
+            "dataloader_num_workers": 0,  # No multiprocessing
             "save_strategy": "epoch",
-            "evaluation_strategy": "epoch",
-            "logging_steps": 100,
+            "eval_strategy": "epoch",
+            "logging_steps": 50,
             "output_dir": "./models/translation_model"
         }
         
@@ -348,7 +347,7 @@ class HPCTranslationTrainer:
                 gradient_accumulation_steps=self.config['gradient_accumulation_steps'],
                 dataloader_num_workers=self.config['dataloader_num_workers'],
                 save_strategy=self.config['save_strategy'],
-                evaluation_strategy=self.config['evaluation_strategy'],
+                eval_strategy=self.config.get('eval_strategy', self.config.get('evaluation_strategy', 'epoch')),
                 logging_steps=self.config['logging_steps'],
                 load_best_model_at_end=True,
                 metric_for_best_model="eval_loss",
@@ -366,8 +365,7 @@ class HPCTranslationTrainer:
                 args=training_args,
                 train_dataset=dataset['train'],
                 eval_dataset=dataset['test'],
-                data_collator=data_collator,
-                tokenizer=tokenizer
+                data_collator=data_collator
             )
             
             # Log parameters to MLflow

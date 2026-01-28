@@ -54,7 +54,7 @@ class PDFTranslator:
             "source_language": "auto",
             "target_language": "es",
             "max_tokens": 2000,
-            "use_local_model": False,
+            "use_local_model": True,
             "local_model_path": "./models/translation_model"
         }
         
